@@ -1,6 +1,9 @@
 package com.srk.pdfAnnotations;
 
 import com.itextpdf.text.DocumentException;
+
+import itextpieceinfo.DocumentPieceInfo;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.FileHandler;
@@ -39,7 +42,6 @@ public static void main(String[] args) throws IOException, DocumentException {
 	    rt.setStartTime();
 	    
 	    
-	    //Combing PDFs process
 	    try{
 	    	pt.setStartTime();
 	    	setMessage("info","Processing Start .."+ processdir+"\n");
@@ -48,7 +50,10 @@ public static void main(String[] args) throws IOException, DocumentException {
 	    	
 	    	ArrayList<String> keys = rsf.setKeys(processdir+annotationsfile);
 	    	
-	    	new AddAnnotations(processdir, keys, LOGGER);
+	    	// run this to create Annotations tags..
+	    	//new AddAnnotations(processdir, keys, LOGGER);
+	    	// run this to create PieceInfo tags
+	    	new DocumentPieceInfo(processdir, keys, LOGGER);
 	    	
 	    	pt.setEndTime();
 	    	pt.setLapsedTime();

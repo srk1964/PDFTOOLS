@@ -63,23 +63,25 @@ private static void Split(String processdir,ArrayList<String> keys, Logger LOGGE
 		    	//add new annotations while incrementing the rectangle coordinates for lx ux
 		    	key = splitter[k].split("=")[0];
 		    	value = splitter[k].split("=")[1];
-				stamp.add(PdfAnnotation.createText(pdfStamper.getWriter(), new Rectangle(lx, ly, ux, uy),null,"A::PDF(T)K("+key+")V("+value+")",false, null));
+				stamp.add(PdfAnnotation.createText(pdfStamper.getWriter(), new Rectangle(lx, ly, ux, uy),null,"A::PDF(T)\nK("+key+")\nV("+value+")",false, null));
 				//increment for next rectangle
 				lx = lx + 5;
 				ux = ux + 5;
 		    }
 		    
     	}
-			for(int p = 1;p<(n+1);p++){
-				if(p==1){
-				for(PdfAnnotation stamps:stamp)
-				pdfStamper.addAnnotation(stamps, p);	
-			}
+			for(int p = 1;p<(n+1);p++)
+			{
+				//if(p==1)
+				//{
+					for(PdfAnnotation stamps:stamp)
+						pdfStamper.addAnnotation(stamps, p);	
+				//}
 			 pdfStamper.close();
 		     document.close();  
 		     pdfReader.close();
 		     x++;
-    	}
+			}
 	  
    
     }
