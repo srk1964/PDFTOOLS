@@ -2,37 +2,35 @@ package itextpieceinfo;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.pdf.PdfCopy;
 import com.itextpdf.text.pdf.PdfDate;
 import com.itextpdf.text.pdf.PdfDictionary;
-import com.itextpdf.text.pdf.PdfImportedPage;
 import com.itextpdf.text.pdf.PdfName;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfString;
+import com.srk.pdfAnnotations.Messenger;
 
 public class DocumentPieceInfo {
     static PdfName PIECE_INFO = new PdfName("PieceInfo");
     static PdfName LAST_MODIFIED = new PdfName("LastModified");
     static PdfName PRIVATE = new PdfName("Private");
     
-    public DocumentPieceInfo(String processdir, ArrayList<String> keys, Logger LOGGER)  
+    public DocumentPieceInfo(String processdir, ArrayList<String> keys, Messenger messenger )  
     {
        try
        {
-           Split(processdir, keys, LOGGER);
+    	     Split(processdir, keys, messenger);
        }catch(Exception e)
        {
-         System.out.println("Error happened " + e.getMessage());
+    	   messenger.setMessage("severe","Error.."+ e.getMessage()+"\n");
        }    
     }
 
 
- private static void Split(String processdir,ArrayList<String> keys, Logger LOGGER) throws DocumentException, IOException
+ private static void Split(String processdir,ArrayList<String> keys, Messenger messenger) 
  {
 	
 	 PdfName PInfo = new PdfName("PieceInfo"); 
@@ -40,25 +38,29 @@ public class DocumentPieceInfo {
 	 PdfName LM = new PdfName("LastModified");
 	 PdfName PRIVATE = new PdfName("Private");
 	 PdfStamper pdfStamper = null;
-//	 PdfImportedPage importedPage;
- String pdfout = null;
-// PdfCopy copy = null;
- ArrayList<pieceInfo> dict;
- Document document = null;
- PdfReader pdfReader = null;
-
- String key;
- String value;
- try{  
- 	int n = 0 ;
+	//	 PdfImportedPage importedPage;
+	 String pdfout = null;
+	// PdfCopy copy = null;
+	 ArrayList<pieceInfo> dict;
+	 Document document = null;
+	 PdfReader pdfReader = null;
+	 String current_file = null;
+	
+	 String key;
+	 String value;
+     int n = 0 ;
+     int line = 0;
  for (String keyrecs : keys){
+	try {
  	String[] splitter = keyrecs.split("\\|");
  	dict = new ArrayList<>();
-
+ 	line++;
  	for(int k =0;k<splitter.length;k++){
  		//first key has to be file so that we can open the PDF
  		//subsequent keys are parsed into an array of PDF Annotations
 		    if(k==0 && splitter[k].contains("FILE")){
+		    	current_file = splitter[k];
+		    	messenger.setMessage("info","processing  "+ current_file +"\n");
 			document = new Document();
 			//use file name to open reader
 			pdfReader = new PdfReader(processdir+splitter[k].split("=")[1]);
@@ -67,21 +69,36 @@ public class DocumentPieceInfo {
 			//copy = new PdfCopy(document,new FileOutputStream(processdir+pdfout));
 			document.open();
 			pdfStamper = new PdfStamper(pdfReader,new FileOutputStream(processdir+pdfout));
-			//document.open();
 			//get number of pages
-			n = pdfReader.getNumberOfPages();
+				n = pdfReader.getNumberOfPages();	
+		    }if(k==0 && ! splitter[k].contains("FILE")){
+		    	messenger.setMessage("warning","no file name passed first key value must be File=filename "+ splitter[k]+" record number "+line+"\n");
+		    	current_file = null;
 		    }else if(k>0){
 		    	//add new annotations while incrementing the rectangle coordinates for lx ux
+		    	if(splitter[k].split("=").length==2) {
 		    	key = splitter[k].split("=")[0];
 		    	value = splitter[k].split("=")[1];
 		    	pieceInfo pinfo = new pieceInfo();
 		    	pinfo.setKey(key);
 		    	pinfo.setValue(value);
 				dict.add(pinfo);
+		    	}else {
+		    		messenger.setMessage("warning","invalid key value pair ("+ splitter[k]+ ") " + current_file +" \n");
+		    		key = splitter[k];
+			    	value = "";
+			    	pieceInfo pinfo = new pieceInfo();
+			    	pinfo.setKey(key);
+			    	pinfo.setValue(value);
+					dict.add(pinfo);
+
+		    	}
 		    }
 		    
  	}
-			for(int p = 1;p<(n+1);p++)
+			if (current_file!=null) 
+			{
+				for(int p = 1;p<(n+1);p++)
 			{
 				//PieceInfo top level
 	            PdfDictionary catalog = new PdfDictionary();
@@ -107,19 +124,19 @@ public class DocumentPieceInfo {
 					{
 						privatepageDict.put( new PdfName(dicts.getKey()), new PdfString(dicts.getValue()));
 					}
-						
-					//importedPage = copy.getImportedPage(pdfReader, p);
-		            //copy.addPage(importedPage);
 		      
 			}
-			 pdfStamper.close();
-			 document.close(); 
-		     pdfReader.close();
-	  
+				pdfStamper.close();
+				document.close(); 
+			    pdfReader.close();
+			}
 
- }
- }catch(DocumentException ex){
- 	System.out.println(" Error " + ex.getMessage());
+
+	  
+ }catch(DocumentException | IOException ex){
+	    messenger.setMessage("warning","PDF Error "+ current_file +" " + ex.getMessage()+"\n");
+	    continue;
+	 }
  }
 
 }
